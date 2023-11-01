@@ -1,0 +1,385 @@
+# logs = contract.events.RoleAdded().get_logs(fromBlock=w3.eth.block_number)
+# print(logs)   
+
+event_filter = w3.eth.filter({"address": contractAddress})
+        print(event_filter.get_all_entries())
+
+ 
+@app.route('/test/<contractAddress>')
+def genIACGraph(contractAddress):
+    # check if there is a json file we need
+    # Check if contractAddress is in the right format
+    if not re.match(r'0x[a-fA-F0-9]{40}', contractAddress):
+        return "Invalid contract address"
+    w3=web3.Web3(web3.HTTPProvider('HTTP://127.0.0.1:7545'))
+    if not w3.is_address(contractAddress) or w3.eth.get_code(contractAddress) == b'':
+        # maybe add a check to see if its the right contract
+        return "Contract does not exist"
+    if os.path.isfile('json/IntelliAccessControl.json'):
+        with open('json/IntelliAccessControl.json') as json_file:
+            contractABI = json.load(json_file)
+        contract = w3.eth.contract(address=contractAddress,abi=contractABI)
+        event_name="RoleAdded"
+        event_filter = contract.events
+        print (event_filter)
+        # for event in event_filter:
+        #     print(event)
+        return "Hello"
+    else:
+        return "No ABI file found"
+
+if __name__ == '__main__':
+    app.run()
+
+
+     
+@app.route('/getGraph/<contractAddress>')
+def genIACGraph(contractAddress):
+    displayAmount=8
+    zeroHex="0x0000000000000000000000000000000000000000000000000000000000000000"
+    IACGraph=nxIAC()
+    roles=getEvents("RoleAdded(bytes32,bytes32)",contractAddress)
+    for role in roles:
+        IACGraph.add_node(role[0].hex()[:displayAmount])
+        # if(role[1].hex()!=ZeroHex):
+        #     IACGraph.add_edge(role[0].hex()[:displayAmount],role[1].hex()[:displayAmount])
+    adminchanged=getEvents("RoleAdminChanged(bytes32,bytes32,bytes32)",contractAddress)
+    for admin in adminchanged:
+        if(admin[2].hex()!=zeroHex):
+            IACGraph.add_edge(admin[0].hex()[:displayAmount],admin[2].hex()[:displayAmount])
+        # Check if this new role change is a removal
+        if (admin[0].hex()!=zeroHex and admin[1].hex()!=zeroHex and admin[2].hex()==zeroHex):
+            IACGraph.remove_edge(admin[0].hex()[:displayAmount],admin[1].hex()[:displayAmount])
+    roleRemoved=getEvents("RoleRemoved(bytes32)",contractAddress)
+    for role in roleRemoved:
+        IACGraph.remove_node(role[0].hex()[:displayAmount])
+
+
+@app.route('/getGraph/<contractAddress>')
+def genIACGraph(contractAddress):
+    displayAmount=8
+    zeroHex="0x0000000000000000000000000000000000000000000000000000000000000000"
+    IACGraph=nxIAC()
+    roles=getEvents("RoleAdded(bytes32,bytes32)",contractAddress)
+    for role in roles:
+        IACGraph.add_node(role[0][:displayAmount])
+        # if(role[1]!=ZeroHex):
+        #     IACGraph.add_edge(role[0][:displayAmount],role[1][:displayAmount])
+    adminchanged=getEvents("RoleAdminChanged(bytes32,bytes32,bytes32)",contractAddress)
+    for admin in adminchanged:
+        if(admin[2]!=zeroHex):
+            IACGraph.add_edge(admin[0][:displayAmount],admin[2][:displayAmount])
+        # Check if this new role change is a removal
+        if (admin[0]!=zeroHex and admin[1]!=zeroHex and admin[2]==zeroHex):
+            IACGraph.remove_edge(admin[0][:displayAmount],admin[1][:displayAmount])
+    roleRemoved=getEvents("RoleRemoved(bytes32)",contractAddress)
+    for role in roleRemoved:
+        IACGraph.remove_node(role[0][:displayAmount])
+
+    return IACGraph.renderSVG()
+
+    @app.route('/testsign/<wee>')
+def testsign(wee):
+    msg="DB53C951F94D68198AA9C7DC27E1EEE43FE324865AA604072B2FC684B563CC0F"
+    w3=web3.Web3(web3.HTTPProvider(URL))
+    encoded=encode_defunct(bytes(msg, encoding='utf8'))
+    test=w3.eth.account.recover_message(encoded,signature="0xfe98b9109413512af799b59aea68032c631d0ca0a51ce2af097fcc5bd17fd98d1c131e319e183b9a14ac1cf8bf7661f3adbb874f10f1b988757e3688d50e16ab1c")
+    print(test)
+    # signer=web3.eth.account.recoverHash(wee,singature="0x11741e5d6c1981cd565447474168aa57bb02d523cc1181fdee1d502bfc864ef34d24a687a785f0e496796835a48102ba8036400a947cabce29737e37c41c11821c")
+    return "Test"
+
+    
+
+
+/*
+
+async function test() {
+  if (typeof window.ethereum !== "undefined") {
+    const e = document.getElementById("contractAddr");
+    const value = e.value;
+    //ensure its in the right format with regex
+    if (value.match(/0x[0-9a-fA-F]{40}/)) {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      await provider.send('eth_requestAccounts', [])
+      const signer = provider.getSigner()
+      const contract = new ethers.Contract(contractAddress, abi, signer)
+    } else {
+      alert("Invalid contract address");
+      return;
+    }
+  } else {
+  }
+}
+*/
+from flask import Flask,render_template,request,jsonify
+from eth_account.messages import encode_defunct
+from Crypto.Hash import keccak
+from dotenv import load_dotenv
+from nxIAC import nxIAC
+import os
+import json
+import web3
+import hashlib
+import re
+import mimetypes
+import sqlite3
+
+app = Flask(__name__,template_folder='../templates',static_folder='../static')
+conn=sqlite3.connect('IACRC.db',check_same_thread=False)
+# load db
+ 
+load_dotenv()
+URL=os.getenv('BLOCKCHAIN_RPC')
+PRIVATE_KEY=os.getenv('PRIV_KEY')
+PUBLIC_KEY=os.getenv('PUB_KEY')
+
+
+# ---------------------------------------------------------------------------- #
+#                                    Routes                                    #
+# ---------------------------------------------------------------------------- #
+
+@app.route('/')
+def base_page():
+    # check if there is a json file we need
+    if os.path.isfile('json/contractlist.json'):
+        # load in that bad boi
+        with open('json/contractlist.json') as json_file:
+            contractList = json.load(json_file)
+        return render_template('index.html',contracts=contractList)
+    else:
+        return render_template('index.html')
+ 
+@app.route('/getGraph/<contractAddress>')
+def genIACGraph(contractAddress):
+    displayAmount=20
+    zeroHex="0x0000000000000000000000000000000000000000000000000000000000000000"
+    IACGraph=nxIAC()
+    roleEvents=getEvents(["RoleAdminChanged(bytes32,bytes32,bytes32)","RoleAdded(bytes32,bytes32)","RoleRemoved(bytes32)"],contractAddress)
+    for event in roleEvents:
+        if(event[0]=="RoleAdminChanged"):
+        #     print(event)
+            if(event[3]!=zeroHex):
+                IACGraph.add_edge(event[1][:displayAmount],event[3][:displayAmount])
+            # Check if this new role change is a removal
+            if (event[1]!=zeroHex and event[2]!=zeroHex and event[3]==zeroHex):
+                IACGraph.remove_edge(event[1][:displayAmount],event[2][:displayAmount])
+        if(event[0]=="RoleAdded"):
+            IACGraph.add_node(event[1][:displayAmount])
+        elif(event[0]=="RoleRemoved"):
+            IACGraph.remove_node(event[1][:displayAmount])
+
+    return IACGraph.renderSVG()
+
+@app.route('/uploadFile',methods=['POST'])
+def uploadFile():
+    # check if the post request has the file part
+    if 'file' not in request.files or 'contractAddress' not in request.form or 'signature' not in request.form:
+        return "Invalid request"
+    # save the file to the server
+    file=request.files['file']
+    contractAddress=request.form['contractAddress']
+    signature=request.form['signature']
+
+    # check if the file is empty
+    if file.filename == '':
+        return "Invalid file"
+    sha=hashlib.sha256(file.read()).hexdigest()
+    file.seek(0)
+    w3=web3.Web3(web3.HTTPProvider(URL))
+    if w3.is_address(contractAddress) and w3.eth.get_code(contractAddress) != b'':
+        try:
+            encoded=encode_defunct(bytes(sha, encoding='utf8'))
+            signer=w3.eth.account.recover_message(encoded,signature=signature)
+            signerFixed="0x"+signer[2:].lower().rjust(64,'0')
+            sha0x="0x"+sha
+            event_filter=w3.eth.filter({"address": contractAddress,"fromBlock": 0,"toBlock": "latest","topics":[getHash("EvidenceAdded(bytes32,bytes32,address)"),None,sha0x,signerFixed]})
+            events=event_filter.get_all_entries()
+            if(len(events)>0):
+                group=events[0]["topics"][1].hex()[2:]
+                if not os.path.exists("Files/"+group):
+                    os.makedirs("Files/"+group)
+                # save the file to the server
+                extension=mimetypes.guess_extension(file.content_type)
+                base="Files/"+group+"/"
+                with open("json/IntelliAccessControl.json") as json_file:
+                    abi=json.load(json_file)
+                    contract=w3.eth.contract(address=contractAddress,abi=abi)
+                    nonce=w3.eth.get_transaction_count(PUBLIC_KEY)
+                    singed=w3.eth.account.sign_transaction(contract.functions.saveEvidence(sha0x).build_transaction({"from":PUBLIC_KEY,"nonce":nonce}),private_key=PRIVATE_KEY)
+                    w3.eth.send_raw_transaction(singed.rawTransaction)
+                    file.save(os.path.join(base,sha+extension))
+                    return "File uploaded successfully And added to the blockchain"
+        except Exception as exception:
+            print(exception)
+            return "Invalid signature"
+    
+    return "Test"
+
+
+@app.route('/accessEvidence',methods=['POST'])
+def accessEvidence():
+    data=request.json
+    if 'contractAddress' not in data or 'evidence' not in data or 'signature' not in data:
+        return "Invalid request"
+    w3=web3.Web3(web3.HTTPProvider(URL))
+    encoded=encode_defunct(bytes(data["evidence"], encoding='utf8'))
+    signer=w3.eth.account.recover_message(encoded,signature=data["signature"])
+    signerFixed="0x"+signer[2:].lower().rjust(64,'0')
+    access=getEventsTopic("EvidenceAccessed(bytes32,bytes32,address)",data["contractAddress"],data["evidence"])
+    if len(access)>0:
+        return "Already accessed"
+    accessRequest=getEventsTopic("EvidenceRequest(bytes32,bytes32,address,bytes32)",data["contractAddress"],data["evidence"],signerFixed)
+    
+    return "Test"
+
+@app.route('/getEvidenceList',methods=['POST'],)
+def getEvidenceList():
+    data=request.json
+    evidence=getAllEvidence(data["contractAddress"],data["address"])
+    returnList=list(map(processGroup,evidence.items()))
+    # convert to json and return
+    return jsonify(returnList)
+
+
+# ---------------------------------------------------------------------------- #
+#                                 Map functions                                #
+# ---------------------------------------------------------------------------- #
+
+def processGroup(x):
+    temp = getGroupName(x[0])
+    return {
+        "groupName": temp if temp != x[0] else "UNKNOWN",
+        "groupHash": x[0],
+        "evidence": list(map(processEvidence,x[1]))
+    }
+
+def processEvidence(x):
+    temp=getEvidenceName(x)
+    return {
+        "evidenceName": temp if temp != x else "UNKNOWN",
+        "evidenceHash": x
+    }
+# ---------------------------------------------------------------------------- #
+#                               Helper functions                               #
+# ---------------------------------------------------------------------------- #
+
+
+
+def getEvents(topics,contractAddress,*args):
+    hashAttr={}
+    hashTopics=[]
+    for topic in topics:
+        hashTopic=getHash(topic)
+        hashTopics.append(hashTopic)
+        hashAttr[hashTopic]=topic
+    if not re.match(r'0x[a-fA-F0-9]{40}', contractAddress):
+        return []
+    w3=web3.Web3(web3.HTTPProvider(URL))
+
+    if w3.is_address(contractAddress) and w3.eth.get_code(contractAddress) != b'':
+        # maybe add a check to see if its the right contract type
+        event_filter = w3.eth.filter({"address": contractAddress,"fromBlock": 0,"toBlock": "latest","topics":[hashTopics,*args]})
+        newTopics=map(lambda x: [hashAttr[x['topics'][0].hex()].split("(")[0]]+list(map(lambda y:y.hex(),x['topics'][1:])),event_filter.get_all_entries())
+        
+        return list(newTopics)
+    else:
+        return []
+
+def getEventsTopic(topic,contractAddress,*args):
+    w3=web3.Web3(web3.HTTPProvider(URL))
+    if w3.is_address(contractAddress) and w3.eth.get_code(contractAddress) != b'':
+        event_filter = w3.eth.filter({"address": contractAddress,"fromBlock": 0,"toBlock": "latest","topics":[getHash(topic),*args]})
+        topicReturn=map(lambda x: list(map(lambda y:y.hex(),x["topics"][1:])), event_filter.get_all_entries())
+        return list(topicReturn)
+    else:
+        return []
+
+
+
+# return all Groups that a user has access to
+def getAllUserAccessGroups(contractAddress,address):
+    signerFixed="0x"+address[2:].lower().rjust(64,'0') # fix the signer so we can search for it
+    events=getEvents(["RoleGranted(bytes32,address,address)","RoleRevoked(bytes32,address,address)"],contractAddress,None,signerFixed)
+    # build the list
+    roles=[]
+    for event in events:
+        if event[0]=="RoleGranted":
+            roles.append(event[1])
+        elif event[0]=="RoleRevoked":
+            roles.remove(event[1])
+    groupEvents=getEvents(["RoleGroupAdded(bytes32,bytes32)","RoleGroupRemoved(bytes32,bytes32)"],contractAddress,None,roles)
+    groups=[]
+    for event in groupEvents:
+        if event[0]=="RoleGroupAdded":
+            groups.append(event[1])
+        elif event[0]=="RoleGroupRemoved":
+            groups.remove(event[1])
+    return groups
+
+def getAllEvidence(contractAddress,address):
+    groups=getAllUserAccessGroups(contractAddress,address)
+    evidence={}
+    for group in groups:
+        temp=getEventsTopic("EvidenceAdded(bytes32,bytes32,address)",contractAddress,group)
+        evidence[group]=list(map(lambda x:x[1],temp))
+    return evidence
+
+def recover(signature,message,bytes32V=False):
+    w3=web3.Web3(web3.HTTPProvider(URL))
+    encoded=encode_defunct(bytes(message, encoding='utf8'))
+    signer=w3.eth.account.recover_message(encoded,signature=signature)
+    if(bytes32V):
+        return "0x"+signer[2:].lower().rjust(64,'0')
+    else:
+        return signer
+
+def getHash(topic):
+    keccakInstance=keccak.new(digest_bits=256)
+    keccakInstance.update(topic.encode('utf-8'))
+    return "0x"+keccakInstance.hexdigest()
+
+def getName(hash):
+    return hash # will implement later
+
+
+# ---------------------------------------------------------------------------- #
+#                              Database Functions                              #
+# ---------------------------------------------------------------------------- #
+
+def getGroupName(hash):
+    c=conn.cursor()
+    c.execute("SELECT name FROM groupNames WHERE id=?",(hash,))
+    # check it actally exists
+    result=c.fetchone()
+    if(result==None):
+        return hash
+    return result[0]
+
+def getEvidenceName(hash):
+    c=conn.cursor()
+    c.execute("SELECT name FROM evidenceNames WHERE id=?",(hash,))
+    # check it actally exists
+    result=c.fetchone()
+    if(result==None):
+        return hash
+    return result[0]
+
+def addGroupName(groupName,name):
+    c=conn.cursor()
+    # check if the group already exists
+    c.execute("SELECT * FROM groupNames WHERE id=?",(groupName,))
+    if(len(c.fetchall())==0):
+        c.execute("INSERT INTO groupNames VALUES (?,?)",(groupName,name))
+    conn.commit()
+
+def addEvidenceName(evidenceId,name):
+    c=conn.cursor()
+    # check if the group already exists
+    c.execute("SELECT * FROM evidenceNames WHERE id=?",(evidenceId,))
+    if(len(c.fetchall())==0):
+        c.execute("INSERT INTO evidenceNames VALUES (?,?)",(evidenceId,name))
+    conn.commit()
+
+# Runner
+if __name__ == '__main__':
+    app.run()

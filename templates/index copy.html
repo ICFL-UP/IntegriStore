@@ -1,0 +1,259 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include "includes.html" %}
+    <script type="module" src="{{ url_for('static',filename='js/index.js')}}"></script>
+    <title>Main</title>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="d-flex justify-content-around">
+        <button class="btn btn-primary" id="connectButton">Connect</button>
+      </div>
+      <div class="row">
+        <div id="controls" class="col-12" style="display: none">
+          <div id="accStuff">
+            <h4>Connected Account Address: <span class="acc"></span></h4>
+          </div>
+          <div class="form-group">
+            <label for="contractAddr">Contract </label>
+            <select name="contractAddr" id="contractAddr" class="form-control col-6">
+              {% for contract in contracts %}
+              <option value="{{ contract.address }}">{{ contract.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="colSection col-6">
+              <a class="secHeader" data-toggle="collapse" href="#removeRoleCollapse" role="button" aria-expanded="false" aria-controls="removeRoleCollapse"
+                ><span class="chevron">&#x276F;</span> Remove Role</a
+              >
+              <div class="collapse col-12" id="removeRoleCollapse">
+                <div class="row" id="removeRoleForm">
+                  <div class="form-group col-4">
+                    <label for="roleName">Role Name</label>
+                    <input type="text" class="form-control" name="roleName" />
+                  </div>
+                  <div class="form-group">
+                    <button class="btn btn-primary" id="removeRoleBtn">Remove Role</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="colSection col-6">
+              <a class="secHeader" data-toggle="collapse" href="#addRoleCollapse" role="button" aria-expanded="false" aria-controls="addRoleCollapse">
+                <span class="chevron">&#x276F;</span> Add role</a
+              >
+              <div class="collapse col-12" id="addRoleCollapse">
+                <div class="row" id="addRoleForm">
+                  <div class="form-group col-4">
+                    <label for="roleName">Role Name</label>
+                    <input type="text" class="form-control" name="roleName" />
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="roleAdmin">Role Admin</label>
+                    <input type="text" class="form-control" name="roleAdmin" />
+                  </div>
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="addRoleBtn">Add Role</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#accessEvidenceCollapse" role="button" aria-expanded="false" aria-controls="accessEvidenceCollapse"
+                ><span class="chevron">&#x276F;</span> Access Evidence</a
+              >
+              <div class="collapse col-12" id="accessEvidenceCollapse">
+                <button class="btn btn-primary" id="loadEvidenceBtn">Load Evidence</button>
+                <div class="row" id="evdiv">
+    
+                </div>
+              </div>
+            </div>
+            
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#grantRoleCollapse" role="button" aria-expanded="false" aria-controls="grantRoleCollapse"
+                ><span class="chevron">&#x276F;</span> Grant Role</a
+              >
+              <div class="collapse col-12" id="grantRoleCollapse">
+                <div class="row" id="grantRoleForm">
+                  <div class="form-group col-4">
+                    <label for="user">User</label>
+                    <input type="text" class="form-control" name="user" />
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="roleName">Role</label>
+                    <input type="text" class="form-control" name="roleName" />
+                  </div>
+
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="grantRoleBtn">GrantRole</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#groupCollapse" role="button" aria-expanded="false" aria-controls="groupCollapse"
+                ><span class="chevron">&#x276F;</span> Add Group</a
+              >
+              <div class="collapse col-12" id="groupCollapse">
+                <div class="row" id="groupAddForm">
+                  <div class="form-group col-4">
+                    <label for="user">Group</label>
+                    <input type="text" class="form-control" name="group" />
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="roleName">Role</label>
+                    <input type="text" class="form-control" name="roleName" />
+                  </div>
+
+                  <div class="form-group col-4">
+                    <label for="leader">Leader</label>
+                    <input type="text" class="form-control" name="leader" />
+                  </div>
+
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="groupAddBtn">Add Group</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#addEvidenceCollapse" role="button" aria-expanded="false" aria-controls="addEvidenceCollapse"
+                ><span class="chevron">&#x276F;</span> Add Evidence</a
+              >
+              <div class="collapse col-12" id="addEvidenceCollapse">
+                <div class="row" id="addEvidenceForm">
+                  <div class="form-group col-4">
+                    <label for="evidence" class="form">Group</label>
+                    <input type="file" class="form-control-file" name="evidence"/>
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="user">Group</label>
+                    <input type="text" class="form-control" name="group" />
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="roleName">Role</label>
+                    <input type="text" class="form-control" name="roleName" />
+                  </div>
+
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="addEvidenceBtn">Add Evidence</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="colSection col-6">
+              <a class="secHeader" data-toggle="collapse" href="#GraphControl" role="button" aria-expanded="false" aria-controls="GraphControl">
+                <span class="chevron">&#x276F;</span> View Role Graph</a
+              >
+              <div class="collapse col-12" id="GraphControl">
+                <button class="btn btn-primary" id="updateView">Update View</button>
+                <div id="graphViewDiv"></div>
+              </div>
+            </div>
+
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#addServerCollapse" role="button" aria-expanded="false" aria-controls="addServerCollapse"
+                ><span class="chevron">&#x276F;</span> Add Server</a
+              >
+              <div class="collapse col-12" id="addServerCollapse">
+                <div class="row" id="addServerForm">
+                  <div class="form-group col-4">
+                    <label for="server" class="form">Server</label>
+                    <input type="text" class="form-control" name="server"/>
+                  </div>
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="addServerBtn">Add Server</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+           
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#addGroupAccessCollapse" role="button" aria-expanded="false" aria-controls="addGroupAccessCollapse"
+                ><span class="chevron">&#x276F;</span> Add group access</a
+              >
+              <div class="collapse col-12" id="addGroupAccessCollapse">
+                <div class="row" id="addGroupAccessForm">
+                  <div class="form-group col-4">
+                    <label for="group" class="form">Group</label>
+                    <input type="text" class="form-control" name="group"/>
+                  </div>
+                  <div class="form-group col-4">
+                    <label for="roleName" class="form">Role</label>
+                    <input type="text" class="form-control" name="roleName"/>
+                  </div>
+                  <div class="form-group col-2">
+                    <button class="btn btn-primary" id="addGroupAccessBtn">Add Access</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="colSection col-12">
+              <a class="secHeader" data-toggle="collapse" href="#msgSignCollapse" role="button" aria-expanded="false" aria-controls="msgSignCollapse"
+                ><span class="chevron">&#x276F;</span> Sign</a
+              >
+              <div class="collapse col-12" id="msgSignCollapse">
+                <div class="row" id="msgSignForm">
+                  <div class="form-group col-4">
+                    <label for="msg" class="form">Message to sign</label>
+                    <input type="text" class="form-control" name="msg"/>
+                  </div>
+                  <div class="form-group col-2">
+                    <div class="d-flex justify-content-center">
+                      <button class="btn btn-primary" id="msgSignBtn">Sign</button>
+                    </div>
+                  </div>
+                  <div class="col-4" class="signed">
+                    <span class="signedMsg"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> <!-- end row -->
+        </div>
+      </div>
+    </div>
+    <!-- Modal/alerts -->
+    <div id="alertContainer" class="w-25"></div>
+
+    <template id="evTemplate">
+      <div class="card col-4">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <p class="card-text">Evidence Hash: <span class="hash"></span></p>
+          <button class="btn btn-info btnDownload">Download</button>
+          
+        </div>
+      </div>
+    </template>
+
+    <template id="groupTemplate">
+      <div class="mt-3">
+        <h4 class="groupHeader"></h4>
+        <h6 class="groupHash"></h6>
+        <div class="controls">
+          <label for="roleSelect">Role to use</label>
+          <select name="roleSelect" class="roleSelect form-control mt-3 mt-3">
+  
+          </select>
+          <div class="innerEv">
+            
+          </div>
+        </div>
+      </div>
+    </template>
+  </body>
+</html>

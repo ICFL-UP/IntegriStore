@@ -1,0 +1,41 @@
+.secHeader {
+  /* remove link look */
+  text-decoration: none;
+  color: #000000;
+}
+
+/* remove link look on hover */
+.secHeader:hover {
+  text-decoration: none;
+  color: #000000;
+}
+
+/* Add a CSS class to style the chevron and define its initial rotation */
+.chevron {
+  transition: transform 0.3s ease; /* Add a transition for smooth rotation */
+  display: inline-block;
+}
+
+/* Define the initial rotation (0 degrees) */
+.chevron.rotated {
+  transform: rotate(90deg);
+}
+
+.colSection {
+    padding: 1em;
+    /* add a black border */
+    border: 1px solid #000000;
+}
+
+.signedMsg{
+  word-wrap: break-word;
+}
+
+#removeRoleBtn{
+  /* make normal size */
+  font-size: 1em;
+
+}
+.custom-btn {
+  width: 150px; /* Adjust the width as needed */
+}
